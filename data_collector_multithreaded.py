@@ -1,11 +1,11 @@
-"""Doesnt work...idk why but multithreading works :)"""
 import os
+import socket
 import sys
 import time
-from utils import get_file_description, key_check, WindowCapture, XboxController
-import socket
-from threading import Thread
 from queue import Queue
+from threading import Thread
+
+from utils import WindowCapture, XInputListener, KeyboardListener
 
 # * Game Path (to exe)
 # game_path = r"D:\Games\Need for Speed - Most Wanted\NFS13.exe"
@@ -37,9 +37,9 @@ class DataCollector(Thread):
         self.paused = False
         self.last_time = 0
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.window_capture = WindowCapture(
-            get_file_description(game_path), height, width)
-        self.controller = XboxController()
+        self.window_capture = WindowCapture(game_path, height, width)
+        self.controller = XInputListener()
+        self.keyboard = KeyboardListener()
         self._get_speed_thread = Thread(
             target=self._get_speed, args=(), daemon=True)
         self.saver = DataSaver()
@@ -56,7 +56,7 @@ class DataCollector(Thread):
         self._get_speed_thread.start()
         print('STARTING!!!')
         while True:
-            self.keys = key_check()
+            self.keys = self.keyboard.read()
             if 'T' in self.keys:
                 if self.paused:
                     print('Unpausing!!!')

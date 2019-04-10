@@ -1,9 +1,10 @@
 import os
-import sys
-import time
-from utils import get_file_description, key_check, WindowCapture, XboxController
 import socket
+import sys
 import threading
+import time
+
+from utils import WindowCapture, XInputListener, KeyboardListener
 
 # * Game Path (to exe)
 # game_path = r"D:\Games\Need for Speed - Most Wanted\NFS13.exe"
@@ -33,9 +34,9 @@ class DataCollector(object):
         self.current_sample = 0
         self.last_time = 0
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.window_capture = WindowCapture(
-            get_file_description(game_path), height, width)
-        self.controller = XboxController()
+        self.window_capture = WindowCapture(game_path, height, width)
+        self.controller = XInputListener()
+        self.keyboard = KeyboardListener()
         self.csv_file = open(save_path + 'data.csv', 'w+')
         self._monitor_thread = threading.Thread(
             target=self._get_speed, args=(), daemon=True)
@@ -52,7 +53,7 @@ class DataCollector(object):
         print('STARTING!!!')
 
         while True:
-            self.keys = key_check()
+            self.keys = self.keyboard.read()
             if 'T' in self.keys:
                 if self.paused:
                     print('Unpausing!!!')

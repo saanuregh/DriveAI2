@@ -1,52 +1,35 @@
 import sys
-
-from win32api import GetFileVersionInfo
-import mss
-from PIL import Image
-from win32gui import FindWindow, IsWindow, GetWindowRect
-from win32api import GetAsyncKeyState
-from inputs import get_gamepad
 from threading import Thread
 
-
-# https://stackoverflow.com/questions/31118877/get-application-name-from-exe-file-in-python
-def get_file_description(windows_exe):
-    try:
-        language, codepage = GetFileVersionInfo(
-            windows_exe, '\\VarFileInfo\\Translation')[0]
-        string_file_info = u'\\StringFileInfo\\%04X%04X\\%s' % (
-            language, codepage, "FileDescription")
-        description = GetFileVersionInfo(windows_exe, string_file_info)
-    except:
-        sys.exit("Executable doesnt exist!!!")
-    return description
+import mss
+from PIL import Image
+from inputs import get_gamepad, get_key
+from win32api import GetFileVersionInfo
+from win32gui import FindWindow, IsWindow, GetWindowRect
 
 
-# Citation: Box Of Hats (https://github.com/Box-Of-Hats )
-KEY_LIST = ["\b"]
-for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ 123456789,.'£$/\\":
-    KEY_LIST.append(char)
-
-
-def key_check():
-    keys = []
-    for i in range(1, 256):
-        if GetAsyncKeyState(i):
-            keys.append(chr(i).capitalize())
-    return keys
-
-
-# * Forgot credit
 class WindowCapture(object):
     hwnd = None
     mss_instance = None
     height = None
     width = None
 
-    def __init__(self, title, height, width):
-        self.hwnd = FindWindow(None, title)
+    def __init__(self, windows_exe, height, width):
+        self.hwnd = FindWindow(None, self.get_file_description(windows_exe))
         self.height = height
         self.width = width
+
+    @staticmethod
+    def get_file_description(windows_exe):
+        try:
+            language, codepage = GetFileVersionInfo(
+                windows_exe, '\\VarFileInfo\\Translation')[0]
+            string_file_info = u'\\StringFileInfo\\%04X%04X\\%s' % (
+                language, codepage, "FileDescription")
+            description = GetFileVersionInfo(windows_exe, string_file_info)
+        except:
+            sys.exit("Executable doesnt exist!!!")
+        return description
 
     def exists(self):
         return IsWindow(self.hwnd)
@@ -69,7 +52,7 @@ class WindowCapture(object):
 
 
 # Solution from https://raw.githubusercontent.com/kevinhughes27/TensorKart/master/utils.py
-class XboxController(object):
+class XInputListener(object):
     MAX_TRIG_VAL = 255
     MAX_JOY_VAL = 32768
 
@@ -94,7 +77,7 @@ class XboxController(object):
         self.RightDPad = 0
         self.UpDPad = 0
         self.DownDPad = 0
-        self._monitor_thread = Thread(target=self._monitor_controller, args=(),daemon=True)
+        self._monitor_thread = Thread(target=self._monitor_controller, args=(), daemon=True)
         self._monitor_thread.start()
 
     def read(self):
@@ -105,19 +88,19 @@ class XboxController(object):
             events = get_gamepad()
             for event in events:
                 if event.code == 'ABS_Y':
-                    self.LeftJoystickY = event.state / XboxController.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_X':
-                    self.LeftJoystickX = event.state / XboxController.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                     if self.LeftJoystickX == 0.999969482421875:
                         self.LeftJoystickX = 1
                 elif event.code == 'ABS_RY':
-                    self.RightJoystickY = event.state / XboxController.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RX':
-                    self.RightJoystickX = event.state / XboxController.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_Z':
-                    self.LeftTrigger = event.state / XboxController.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.LeftTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'ABS_RZ':
-                    self.RightTrigger = event.state / XboxController.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.RightTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'BTN_TL':
                     self.LeftBumper = event.state
                 elif event.code == 'BTN_TR':
@@ -146,3 +129,24 @@ class XboxController(object):
                     self.UpDPad = event.state
                 elif event.code == 'BTN_TRIGGER_HAPPY4':
                     self.DownDPad = event.state
+
+
+class KeyboardListener(object):
+    def __init__(self):
+        self.keys = []
+        self._monitor_thread = Thread(target=self._monitor_keyboard, args=(), daemon=True)
+        self._monitor_thread.start()
+
+    def read(self):
+        return self.keys
+
+    def _monitor_keyboard(self):
+        while True:
+            events = get_key()
+            self.keys = []
+            for event in events:
+                if event.state == 1 and event.ev_type == "Key":
+                    if event.code == 'KEY_T':
+                        self.keys.append('T')
+                    elif event.code == 'KEY_Q':
+                        self.keys.append('Q')
