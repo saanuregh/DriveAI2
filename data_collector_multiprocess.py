@@ -73,6 +73,9 @@ class DataCollector(Process):
                 self.last_time = time.time()
                 self.screen = self.window_capture.screenshot()
                 self.steering_angle, self.throttle, self.brake = self.controller.read()
+                if self.steering_angle == 0.999969482421875:
+                    self.steering_angle = 1  # error in +x-axis max val = 0.999969482421875
+                self.steering_angle = 0.5 + self.steering_angle * 0.5  # normalize between 0 and 1
                 queue.put_nowait([self.screen, self.steering_angle,
                                   self.throttle, self.brake, self.speed])
                 queue.join()

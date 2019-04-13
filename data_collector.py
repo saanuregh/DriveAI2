@@ -71,6 +71,9 @@ class DataCollector(object):
                 self.last_time = time.time()
                 self.screen = self.window_capture.screenshot()
                 self.steering_angle, self.throttle, self.brake = self.controller.read()
+                if self.steering_angle == 0.999969482421875:
+                    self.steering_angle = 1  # error in +x-axis max val = 0.999969482421875
+                self.steering_angle = 0.5 + self.steering_angle * 0.5  # normalize between 0 and 1
                 self.path = f"{save_path}img{self.current_sample}.png"
                 self.screen.save(self.path, 'PNG')
                 self.csv_file.write('%f,%f,%f,%s,%s\n' %

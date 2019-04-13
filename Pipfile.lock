@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "219c40cf243a39c3ea2f7cdef4100c08381c711a1bd07c99652f37d246f02ef0"
+            "sha256": "124fad99b5be3ead82d18eb4978628cf2308abd518511c8b66f8ca74eac3eaed"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -271,6 +271,14 @@
                 "sha256:ec3c49b6d247152e19110c3a53d9bb4cf917747882017f70796460728b02722e"
             ],
             "version": "==3.7.1"
+        },
+        "pyvjoy": {
+            "hashes": [
+                "sha256:00a6c02259758125ddefa76699352a373f75c5a493b166d837dbe52111a2f85f",
+                "sha256:e3e1382034a94353c802b3eea231b0fa950f8e726a813690c7ac706df807acad"
+            ],
+            "index": "pypi",
+            "version": "==1.0.1"
         },
         "pywin32": {
             "hashes": [

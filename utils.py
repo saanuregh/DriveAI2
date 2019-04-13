@@ -92,8 +92,6 @@ class XInputListener(object):
                     self.LeftJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_X':
                     self.LeftJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
-                    if self.LeftJoystickX == 0.999969482421875:
-                        self.LeftJoystickX = 1
                 elif event.code == 'ABS_RY':
                     self.RightJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RX':

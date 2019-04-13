@@ -15,6 +15,7 @@ pywin32 = "*"
 mss = "*"
 pillow = "*"
 tensorflow-gpu = "*"
+pyvjoy = "*"
 
 [requires]
 python_version = "3.6"
