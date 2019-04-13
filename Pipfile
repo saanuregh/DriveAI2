@@ -14,7 +14,7 @@ opencv-python = "*"
 pywin32 = "*"
 mss = "*"
 pillow = "*"
-bluelet = "*"
+tensorflow-gpu = "*"
 
 [requires]
 python_version = "3.6"

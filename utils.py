@@ -1,5 +1,6 @@
 import sys
 from threading import Thread
+from time import time
 
 import mss
 from PIL import Image
@@ -150,3 +151,21 @@ class KeyboardListener(object):
                         self.keys.append('T')
                     elif event.code == 'KEY_Q':
                         self.keys.append('Q')
+
+
+class FPSTimer:
+    def __init__(self):
+        self.t = time()
+        self.iter = 0
+
+    def reset(self):
+        self.t = time()
+        self.iter = 0
+
+    def on_frame(self):
+        self.iter += 1
+        if self.iter == 100:
+            e = time()
+            print('FPS: %0.2f' % (100.0 / (e - self.t)))
+            self.t = time()
+            self.iter = 0
