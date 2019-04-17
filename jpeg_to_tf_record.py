@@ -39,13 +39,6 @@ import apache_beam as beam
 import tensorflow as tf
 
 
-def _int64_feature(value):
-    """Wrapper for inserting int64 features into Example proto."""
-    if not isinstance(value, list):
-        value = [value]
-    return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
-
-
 def _float_feature(value):
     """Wrapper for inserting float32 features into Example proto."""
     if not isinstance(value, list):
@@ -68,7 +61,6 @@ def _convert_to_example(image_buffer, speed, label):
     Returns:
       Example proto
     """
-
     example = tf.train.Example(
         features=tf.train.Features(
             feature={
@@ -87,7 +79,6 @@ def _get_image_data(filename):
     Returns:
       image_buffer: string, JPEG encoding of RGB image.
     """
-    # Read the image file.
     with tf.gfile.GFile(filename, 'rb') as ifp:
         image_data = ifp.read()
     return image_data
@@ -101,7 +92,6 @@ def convert_to_example(csvline):
     Yields:
       serialized TF example if the label is in categories
     """
-    # steering_angle, throttle, brake, speed, filename = csvline.encode('ascii', 'ignore').split(',')
     steering_angle, throttle, brake, speed, filename = csvline.split(',')
     label = [float(steering_angle), float(throttle), float(brake)]
     image_buffer = _get_image_data(filename)
@@ -113,14 +103,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--train_csv',
-        # pylint: disable=line-too-long
         help='Path to input.  Each line of input has two fields  image-file-name and label separated by a comma',
         required=True)
-    # parser.add_argument(
-    #     '--validation_csv',
-    #     # pylint: disable=line-too-long
-    #     help='Path to input.  Each line of input has two fields  image-file-name and label separated by a comma',
-    #     required=True)
+    parser.add_argument(
+        '--validation_csv',
+        help='Path to input.  Each line of input has two fields  image-file-name and label separated by a comma',
+        default=None)
     parser.add_argument(
         '--project_id',
         help='ID (not name) of your project. Ignored by DirectRunner',
@@ -148,6 +136,11 @@ if __name__ == '__main__':
     else:
         RUNNER = 'DataflowRunner' if on_cloud else 'DirectRunner'
 
+    if arguments['validation_csv']:
+        steps = ['train', 'validation']
+    else:
+        steps = ['train']
+
     # clean-up output directory since Beam will name files 0000-of-0004 etc.
     # and this could cause confusion if earlier run has 0000-of-0005, for eg
     if on_cloud:
@@ -173,11 +166,12 @@ if __name__ == '__main__':
 
     with beam.Pipeline(RUNNER, options=opts) as p:
         # BEAM tasks
-        # for step in ['train', 'validation']:
-        for step in ['train']:
+        for step in steps:
             _ = (
                     p
                     | '{}_read_csv'.format(step) >> beam.io.ReadFromText(arguments['{}_csv'.format(step)])
                     | '{}_convert'.format(step) >> beam.FlatMap(lambda line: convert_to_example(line))
-                    | '{}_write_tfr'.format(step) >> beam.io.tfrecordio.WriteToTFRecord(os.path.join(OUTPUT_DIR, step)))
+                    | '{}_write_tfr'.format(step) >> beam.io.tfrecordio.WriteToTFRecord(os.path.join(OUTPUT_DIR, step),
+                                                                                        file_name_suffix='.tfrecord'))
+
     print("DONE")

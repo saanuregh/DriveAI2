@@ -10,12 +10,12 @@ jedi = "*"
 
 [packages]
 inputs = "*"
-opencv-python = "*"
 pywin32 = "*"
 mss = "*"
-pillow = "*"
 tensorflow-gpu = "*"
 pyvjoy = "*"
+apache-beam = "*"
+pillow-simd = {editable = true,path = "D:/Projects/pillow-simd"}
 
 [requires]
 python_version = "3.6"

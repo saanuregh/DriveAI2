@@ -1,4 +1,4 @@
-from utils import WindowCapture, FPSTimer
+from utils import WindowCapture
 
 height = 300
 width = 400
@@ -8,10 +8,9 @@ save_path = 'test/'
 if __name__ == "__main__":
     current_sample = 0
     window_capture = WindowCapture(game_path, height, width)
-    timer = FPSTimer()
+    # TODO: rework the fps thing
     while True:
-        screen = window_capture.screenshot_pillow()
-        path = f"{save_path}img{current_sample}.jpeg"
+        screen = window_capture.screenshot()
+        path = f"{save_path}img{current_sample}.jpg"
         screen.save(path, 'JPEG', quality=90)
         current_sample += 1
-        timer.on_frame()

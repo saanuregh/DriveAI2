@@ -1,12 +1,11 @@
 import sys
 from threading import Thread
-from time import time
 
 import mss
 from PIL import Image
 from inputs import get_gamepad, get_key
 from win32api import GetFileVersionInfo
-from win32gui import FindWindow, IsWindow, GetWindowRect
+from win32gui import FindWindow, GetWindowRect, IsWindow
 
 
 class WindowCapture(object):
@@ -17,6 +16,8 @@ class WindowCapture(object):
 
     def __init__(self, windows_exe, height, width):
         self.hwnd = FindWindow(None, self.get_file_description(windows_exe))
+        if not self.exists():
+            sys.exit("Executable not running!!!")
         self.height = height
         self.width = width
 
@@ -28,6 +29,7 @@ class WindowCapture(object):
             string_file_info = u'\\StringFileInfo\\%04X%04X\\%s' % (
                 language, codepage, "FileDescription")
             description = GetFileVersionInfo(windows_exe, string_file_info)
+            print("Executable exist!!!")
         except:
             sys.exit("Executable doesnt exist!!!")
         return description
@@ -78,7 +80,8 @@ class XInputListener(object):
         self.RightDPad = 0
         self.UpDPad = 0
         self.DownDPad = 0
-        self._monitor_thread = Thread(target=self._monitor_controller, args=(), daemon=True)
+        self._monitor_thread = Thread(
+            target=self._monitor_controller, args=(), daemon=True)
         self._monitor_thread.start()
 
     def read(self):
@@ -89,17 +92,23 @@ class XInputListener(object):
             events = get_gamepad()
             for event in events:
                 if event.code == 'ABS_Y':
-                    self.LeftJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickY = event.state / \
+                                         XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_X':
-                    self.LeftJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickX = event.state / \
+                                         XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RY':
-                    self.RightJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickY = event.state / \
+                                          XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RX':
-                    self.RightJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickX = event.state / \
+                                          XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_Z':
-                    self.LeftTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.LeftTrigger = event.state / \
+                                       XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'ABS_RZ':
-                    self.RightTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.RightTrigger = event.state / \
+                                        XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'BTN_TL':
                     self.LeftBumper = event.state
                 elif event.code == 'BTN_TR':
@@ -133,7 +142,8 @@ class XInputListener(object):
 class KeyboardListener(object):
     def __init__(self):
         self.keys = []
-        self._monitor_thread = Thread(target=self._monitor_keyboard, args=(), daemon=True)
+        self._monitor_thread = Thread(
+            target=self._monitor_keyboard, args=(), daemon=True)
         self._monitor_thread.start()
 
     def read(self):
@@ -149,21 +159,3 @@ class KeyboardListener(object):
                         self.keys.append('T')
                     elif event.code == 'KEY_Q':
                         self.keys.append('Q')
-
-
-class FPSTimer:
-    def __init__(self):
-        self.t = time()
-        self.iter = 0
-
-    def reset(self):
-        self.t = time()
-        self.iter = 0
-
-    def on_frame(self):
-        self.iter += 1
-        if self.iter == 100:
-            e = time()
-            print('FPS: %0.2f' % (100.0 / (e - self.t)))
-            self.t = time()
-            self.iter = 0
