@@ -88,4 +88,4 @@ if __name__ == "__main__":
     #     print("Directory exists!!!")
     #     if input("Continue(y/n): ") != 'y':
     #         sys.exit()
-    DataCollector("localhost", 4915)
+    DataCollector('0.0.0.0', 4915)

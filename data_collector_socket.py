@@ -3,6 +3,8 @@ import sys
 import time
 from queue import Queue
 from threading import Thread
+import socket
+import asyncio
 
 from utils import WindowCapture, XInputListener, KeyboardListener, SpeedOutputListener
 
@@ -23,25 +25,23 @@ wait_time = (1 / samples_per_sec)
 
 class DataCollector(object):
     def __init__(self, hostname, port):
+        self.hostname = hostname
+        self.port = port
         self._done = False
         self.paused = False
-        self.current_sample = 0
         self.last_time = 0
         self.window_capture = WindowCapture(game_path, height, width)
         self.controller = XInputListener()
         self.keyboard = KeyboardListener()
-        self.speed_server = SpeedOutputListener(hostname, port)
-        self.csv_file = open(os.path.join(save_dir, "data.csv"), 'w+')
-        self.queue = Queue()
-        self.saver_thread = Thread(
-            target=self._saver, args=(), daemon=True)
-        self.start()
-
-    def start(self):
+        self.speed_server = SpeedOutputListener('0.0.0.0', 4915)
         self.controller.start()
         self.keyboard.start()
         self.speed_server.start()
-        self.saver_thread.start()
+        self.loop = asyncio.get_event_loop()
+        self.loop.run_until_complete(send())
+
+    async def send(self):
+        reader, writer = await asyncio.open_connection(self.hostname,self.port,loop=self.loop)
         print("Data collection Starting!!!")
         for i in reversed(range(1, 4)):
             print(i)
@@ -63,28 +63,19 @@ class DataCollector(object):
             # if not self.window_capture.exists():
             #     sys.exit("Executable exited!!!")
             if not self.paused and (time.time() - self.last_time) >= wait_time:
+                
                 screen = self.window_capture.screenshot()
                 steering_angle, throttle, brake = self.controller.read()
                 if steering_angle == 0.999969482421875:
                     steering_angle = 1  # error in +x-axis max val = 0.999969482421875
                 steering_angle = 0.5 + steering_angle * 0.5  # normalize between 0 and 1
                 speed = self.speed_server.read()
-                self.queue.put_nowait([screen, steering_angle, throttle, brake, speed])
+                _data = [screen, steering_angle, throttle, brake, speed]
+                writer.write(_data)
                 # print(f'FPS:{(1/(time.time()-self.last_time)):.2f}')
                 self.last_time = time.time()
         print("Batch Complete!!!")
         self.stop()
-
-    def _saver(self):
-        print("Data saver Starting!!!")
-        while not self._done:
-            if not self.queue.empty():
-                path = os.path.join(save_dir, f"img{self.current_sample}.jpg")
-                data = self.queue.get_nowait()
-                data[0].save(path, 'JPEG', quality=90)
-                self.csv_file.write(f'{data[1]:f},{data[2]:f},{data[3]:f},{data[4]:f},{path}\n')
-                print(f'{data[1]},{data[2]},{data[3]},{data[4]},{path}')
-                self.current_sample += 1
 
     def stop(self):
         self._done = True
@@ -103,4 +94,4 @@ if __name__ == "__main__":
     #     print("Directory exists!!!")
     #     if input("Continue(y/n): ") != 'y':
     #         sys.exit()
-    DataCollector('0.0.0.0', 4915)
+    DataCollector('192.168.0.13', 4915)
