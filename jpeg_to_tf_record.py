@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Beam pipeline to create TFRecord files from JPEG files stored on GCS.
 
-These are the TFRecord format expected by  the resnet and amoebanet models.
 Example usage:
 python -m jpeg_to_tf_record.py \
        --train_csv gs://cloud-ml-data/img/flower_photos/train_set.csv \

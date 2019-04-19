@@ -3,7 +3,7 @@ from utils import WindowCapture
 height = 300
 width = 400
 game_path = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-save_path = 'test/'
+save_path = 'training_data/teat/'
 
 if __name__ == "__main__":
     current_sample = 0

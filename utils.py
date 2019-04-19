@@ -1,3 +1,4 @@
+import socket
 import sys
 from threading import Thread
 
@@ -9,17 +10,13 @@ from win32gui import FindWindow, GetWindowRect, IsWindow
 
 
 class WindowCapture(object):
-    hwnd = None
-    mss_instance = None
-    height = None
-    width = None
-
     def __init__(self, windows_exe, height, width):
         self.hwnd = FindWindow(None, self.get_file_description(windows_exe))
         if not self.exists():
             sys.exit("Executable not running!!!")
         self.height = height
         self.width = width
+        self.mss_instance = mss.mss()
 
     @staticmethod
     def get_file_description(windows_exe):
@@ -46,8 +43,6 @@ class WindowCapture(object):
         x, y, w, h = self.get_size()
         area = {"left": x + 10, "top": y + 30,
                 "width": w - 20, "height": h - 40}
-        if self.mss_instance is None:
-            self.mss_instance = mss.mss()
         sct_img = self.mss_instance.grab(area)
         img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
         img = img.resize((self.width, self.height), Image.BICUBIC)
@@ -55,11 +50,14 @@ class WindowCapture(object):
 
 
 # Solution from https://raw.githubusercontent.com/kevinhughes27/TensorKart/master/utils.py
-class XInputListener(object):
+class XInputListener(Thread):
     MAX_TRIG_VAL = 255
     MAX_JOY_VAL = 32768
 
     def __init__(self):
+        super().__init__()
+        self.daemon = True
+        self._done = False
         self.LeftJoystickY = 0
         self.LeftJoystickX = 0
         self.RightJoystickY = 0
@@ -80,35 +78,33 @@ class XInputListener(object):
         self.RightDPad = 0
         self.UpDPad = 0
         self.DownDPad = 0
-        self._monitor_thread = Thread(
-            target=self._monitor_controller, args=(), daemon=True)
-        self._monitor_thread.start()
+
+    def request_quit(self):
+        self._done = True
+
+    def join(self, **kwargs):
+        self.request_quit()
+        super().join()
 
     def read(self):
         return self.LeftJoystickX, self.RightTrigger, self.LeftTrigger
 
-    def _monitor_controller(self):
-        while True:
+    def run(self):
+        while not self._done:
             events = get_gamepad()
             for event in events:
                 if event.code == 'ABS_Y':
-                    self.LeftJoystickY = event.state / \
-                                         XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_X':
-                    self.LeftJoystickX = event.state / \
-                                         XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.LeftJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RY':
-                    self.RightJoystickY = event.state / \
-                                          XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickY = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_RX':
-                    self.RightJoystickX = event.state / \
-                                          XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
+                    self.RightJoystickX = event.state / XInputListener.MAX_JOY_VAL  # normalize between -1 and 1
                 elif event.code == 'ABS_Z':
-                    self.LeftTrigger = event.state / \
-                                       XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.LeftTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'ABS_RZ':
-                    self.RightTrigger = event.state / \
-                                        XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
+                    self.RightTrigger = event.state / XInputListener.MAX_TRIG_VAL  # normalize between 0 and 1
                 elif event.code == 'BTN_TL':
                     self.LeftBumper = event.state
                 elif event.code == 'BTN_TR':
@@ -137,20 +133,28 @@ class XInputListener(object):
                     self.UpDPad = event.state
                 elif event.code == 'BTN_TRIGGER_HAPPY4':
                     self.DownDPad = event.state
+        print("XInputListener thread exiting!!!")
 
 
-class KeyboardListener(object):
+class KeyboardListener(Thread):
     def __init__(self):
+        super().__init__()
+        self.daemon = True
+        self._done = False
         self.keys = []
-        self._monitor_thread = Thread(
-            target=self._monitor_keyboard, args=(), daemon=True)
-        self._monitor_thread.start()
 
     def read(self):
         return self.keys
 
-    def _monitor_keyboard(self):
-        while True:
+    def request_quit(self):
+        self._done = True
+
+    def join(self, **kwargs):
+        self.request_quit()
+        super().join()
+
+    def run(self):
+        while not self._done:
             events = get_key()
             self.keys = []
             for event in events:
@@ -159,3 +163,32 @@ class KeyboardListener(object):
                         self.keys.append('T')
                     elif event.code == 'KEY_Q':
                         self.keys.append('Q')
+        print("KeyboardListener thread exiting!!!")
+
+
+class SpeedOutputListener(Thread):
+    def __init__(self, hostname, port):
+        super().__init__()
+        self.daemon = True
+        self._done = False
+        self.speed = 0.0
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket.bind((hostname, port))
+        print(f"Connected to {hostname} port {port} !!!")
+
+    def read(self):
+        return self.speed
+
+    def request_quit(self):
+        self._done = True
+
+    def join(self, **kwargs):
+        self.request_quit()
+        super().join()
+
+    def run(self):
+        while not self._done:
+            self.speed = float(
+                str(self.socket.recv(25), 'utf-8', errors='namereplace'))
+        self.socket.close()
+        print("SpeedOutputListener thread exiting!!!")

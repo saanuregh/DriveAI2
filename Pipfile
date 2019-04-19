@@ -16,6 +16,7 @@ tensorflow-gpu = "*"
 pyvjoy = "*"
 apache-beam = "*"
 pillow-simd = {editable = true,path = "D:/Projects/pillow-simd"}
+pyyaml = "*"
 
 [requires]
 python_version = "3.6"

@@ -7,7 +7,7 @@ j = pyvjoy.VJoyDevice(1)
 
 VJOY_MAX = 32768
 
-while 1:
+while True:
     for i in numpy.arange(0, 1.05, 0.05):
         j.data.wAxisX = int(i * VJOY_MAX)  # X-axis/Steering angle
         j.data.wAxisY = int(i * VJOY_MAX)  # Left Trigger/Brake

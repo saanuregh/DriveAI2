@@ -1,0 +1,18 @@
+git clone https://github.com/saanuregh/pillow-simd.git
+cd pillow-simd
+$env:CPATH += ';C:\libjpeg-turbo64\include;'
+$env:LIBRARY_PATH += ';C:\libjpeg-turbo64\lib;'
+python setup.py -v install
+
+pipenv install -e git+https://github.com/saanuregh/pillow-simd.git#egg=Pillow-SIMD
+pipenv install -e git+D:\Projects\pillow-simd#egg=Pillow-SIMD
+pipenv install -e D:\Projects\pillow-simd
+
+
+python jpeg_to_tf_record.py --train_csv D:\Projects\DriveAI2\training_data\data.csv --project_id TEST --output_dir D:\Projects\DriveAI2\training_data\tfrecord\
+
+
+pip install tensorboardcolab
+from tensorboardcolab import *
+tbc=TensorBoardColab()
+callbacks=[TensorBoardColabCallback(tbc)]   
