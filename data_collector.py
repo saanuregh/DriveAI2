@@ -66,7 +66,7 @@ class DataCollector(object):
                     save_dir, f"img{self.current_sample}.jpg")
                 screen.save(path, 'JPEG', quality=90)
                 self.csv_file.write(f'{steering_angle:f},{throttle:f},{brake:f},{speed:f},{path}\n')
-                print(f'{steering_angle},{throttle},{brake},{speed},{path}')
+                # print(f'{steering_angle},{throttle},{brake},{speed},{path}')
                 # print(f'FPS:{(1/(time.time()-self.last_time)):.2f}')
                 self.current_sample += 1
                 self.last_time = time.time()

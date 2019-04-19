@@ -1,8 +1,8 @@
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
-from threading import Thread
 
 from utils import WindowCapture, XInputListener, KeyboardListener, SpeedOutputListener
 
@@ -33,15 +33,15 @@ class DataCollector(object):
         self.speed_server = SpeedOutputListener(hostname, port)
         self.csv_file = open(os.path.join(save_dir, "data.csv"), 'w+')
         self.queue = Queue()
-        self.saver_thread = Thread(
-            target=self._saver, args=(), daemon=True)
+        self.executor = ThreadPoolExecutor()
+        self.executor.submit(self._saver)
         self.start()
 
     def start(self):
         self.controller.start()
         self.keyboard.start()
         self.speed_server.start()
-        self.saver_thread.start()
+        # self.saver_thread.start()
         print("Data collection Starting!!!")
         for i in reversed(range(1, 4)):
             print(i)
@@ -69,8 +69,10 @@ class DataCollector(object):
                     steering_angle = 1  # error in +x-axis max val = 0.999969482421875
                 steering_angle = 0.5 + steering_angle * 0.5  # normalize between 0 and 1
                 speed = self.speed_server.read()
-                self.queue.put_nowait([screen, steering_angle, throttle, brake, speed])
+                path = os.path.join(save_dir, f"img{self.current_sample}.jpg")
+                self.queue.put_nowait([screen, steering_angle, throttle, brake, speed, path])
                 # print(f'FPS:{(1/(time.time()-self.last_time)):.2f}')
+                self.current_sample += 1
                 self.last_time = time.time()
         print("Batch Complete!!!")
         self.stop()
@@ -79,16 +81,13 @@ class DataCollector(object):
         print("Data saver Starting!!!")
         while not self._done:
             if not self.queue.empty():
-                path = os.path.join(save_dir, f"img{self.current_sample}.jpg")
                 data = self.queue.get_nowait()
-                data[0].save(path, 'JPEG', quality=90)
-                self.csv_file.write(f'{data[1]:f},{data[2]:f},{data[3]:f},{data[4]:f},{path}\n')
-                print(f'{data[1]},{data[2]},{data[3]},{data[4]},{path}')
-                self.current_sample += 1
+                data[0].save(data[5], 'JPEG', quality=90)
+                self.csv_file.write(f'{data[1]:f},{data[2]:f},{data[3]:f},{data[4]:f},{data[5]}\n')
+                # print(f'{data[1]},{data[2]},{data[3]},{data[4]},{path}')
 
     def stop(self):
         self._done = True
-        self.saver_thread.join()
         self.csv_file.close()
         self.speed_server.join()
         self.keyboard.join()
